@@ -1,0 +1,17 @@
+langchain
+langchain-community
+chromadb
+pypdf
+sentence-transformers
+fastapi
+uvicorn
+pydantic
+transformers
+accelerate
+python-dotenv
+tiktoken
+tqdm
+sentencepiece
+protobuf
+numpy
+torch

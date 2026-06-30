@@ -30,22 +30,12 @@ class LLMAgent:
         # Crop terms for relevance checking
         self.crop_terms = ['maize', 'corn', 'mahindi', 'bean', 'beans', 'maharagwe', 
                            'coffee', 'kahawa', 'sugarcane', 'miwa', 'wheat', 'ngano', 
-                           'sweet potato', 'cassava', 'rice', 'tomato', 'onion', 'cabbage']
-        
-        # Disease terms for relevance checking (only for disease-related questions)
-        self.disease_terms = ['lethal necrosis', 'mln', 'rust', 'blight', 'wilt', 
-                              'spot', 'canker', 'mosaic', 'rot', 'mildew', 
-                              'anthracnose', 'smut', 'streak', 'mottle']
-        
-        # Fertilizer/management terms
-        self.management_terms = ['fertilizer', 'fertilizers', 'mbolea', 'pest', 'pesticide', 
-                                 'dawa', 'weed', 'herbicide', 'fungicide', 'insecticide',
-                                 'treat', 'treatment', 'control', 'manage', 'management']
+                           'sweet potato', 'cassava', 'rice', 'tomato', 'onion', 'cabbage',
+                           'tea', 'chai', 'cotton', 'pamba', 'sisal']
     
     def generate_response(self, question: str, context: List[Document]) -> str:
-        """Generate a response using Groq with context relevance checking."""
+        """Generate a response using Groq with context."""
         
-        # If Groq is not available, use fallback
         if not self.client:
             return self._fallback_response(question, context)
         
@@ -53,44 +43,20 @@ class LLMAgent:
             return self._handle_no_context(question)
         
         # Prepare context
-        context_text = "\n\n".join([doc.page_content for doc in context[:3]])
+        context_text = "\n\n".join([doc.page_content for doc in context[:5]])
         if len(context_text) > 3000:
             context_text = context_text[:3000] + "..."
         
-        # Detect what the question is about
-        question_lower = question.lower()
-        mentioned_crops = [term for term in self.crop_terms if term in question_lower]
-        mentioned_diseases = [term for term in self.disease_terms if term in question_lower]
-        is_management_query = any(term in question_lower for term in self.management_terms)
-        
-        # Check if context contains the mentioned crops
-        context_lower = context_text.lower()
-        has_crop_in_context = any(crop in context_lower for crop in mentioned_crops) if mentioned_crops else True
-        
-        # If crops are mentioned but not in context, warn but still try to answer
-        if mentioned_crops and not has_crop_in_context:
-            # Check if ANY crop is mentioned in context
-            any_crop_in_context = any(crop in context_lower for crop in self.crop_terms)
-            if not any_crop_in_context:
-                return self._handle_missing_crop_context(question, mentioned_crops)
-        
-        # If the question is about disease but no disease context
-        if mentioned_diseases and not has_crop_in_context:
-            # Only trigger if question is explicitly about disease
-            if any(term in question_lower for term in ['disease', 'symptom', 'ugonjwa', 'dalili']):
-                return self._handle_missing_disease_context(question, mentioned_diseases)
-        
-        # Prepare prompt
+        # Build prompt
         prompt = self.config.PROMPT_TEMPLATE.format(
             context=context_text,
             question=question
         )
         
         try:
-            # Call Groq API
             chat_completion = self.client.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": "You are a helpful agricultural advisor for Kenyan farmers. Always respond in clear, simple English. Use the context provided to answer the question. If the context doesn't contain specific information about the crop asked, say so and provide general guidance based on what you do know."},
+                    {"role": "system", "content": "You are a helpful agricultural advisor for Kenyan farmers. Always respond in clear, simple English."},
                     {"role": "user", "content": prompt}
                 ],
                 model=self.model,
@@ -101,7 +67,6 @@ class LLMAgent:
             
             response = chat_completion.choices[0].message.content
             
-            # If response is empty or too short, use fallback
             if not response or len(response.strip()) < 20:
                 return self._fallback_response(question, context)
             
@@ -113,55 +78,25 @@ class LLMAgent:
     
     def _handle_no_context(self, question: str) -> str:
         """Handle when no context is found."""
-        return f"""I couldn't find specific information about '{question}' in my knowledge base.
+        return f"""I don't have specific information about '{question}' in my knowledge base.
 
-📌 Suggestions:
-1. Try asking about a specific crop (e.g., 'maize disease symptoms')
-2. Ask about a specific disease or topic (e.g., 'how to treat leaf rust')
-3. Consult your local agricultural extension officer for field-specific advice
-4. Visit KALRO's official website for more resources
+However, based on general knowledge of Kenyan agriculture:
 
-I'm here to help with any other agricultural questions you have!"""
-    
-    def _handle_missing_crop_context(self, question: str, crops: list) -> str:
-        """Handle when context doesn't contain the crop mentioned."""
-        crop_text = ', '.join(crops)
-        
-        return f"""I notice you're asking about **{crop_text}**.
+📌 The Ministry of Agriculture, Livestock, Fisheries, and Cooperatives oversees agricultural policy in Kenya.
 
-However, my knowledge base doesn't contain specific information about {crop_text} in the context I retrieved. I found information about other crops instead.
+📌 KALRO (Kenya Agricultural and Livestock Research Organization) provides research and extension services.
 
-📌 For official information on {crop_text}, I recommend:
-- KALRO (Kenya Agricultural and Livestock Research Organization)
-- Your local agricultural extension officer
-- Ministry of Agriculture, Livestock and Fisheries
+📌 Local agricultural extension officers are available in every county to assist farmers.
 
-Would you like to ask about a specific crop that I might have information on?"""
-    
-    def _handle_missing_disease_context(self, question: str, diseases: list) -> str:
-        """Handle when context doesn't contain the disease mentioned."""
-        disease_text = ', '.join(diseases)
-        
-        return f"""I notice you're asking about **{disease_text}**.
-
-However, my knowledge base doesn't contain specific information about this disease in the context I retrieved.
-
-📌 For official information on this disease, I recommend:
-- KALRO (Kenya Agricultural and Livestock Research Organization)
-- Your local agricultural extension officer
-- CABI Plantwise Knowledge Bank
-
-Would you like to ask about a specific crop or disease that I might have information on?"""
+Would you like me to help with a specific crop or topic?"""
     
     def _fallback_response(self, question: str, context: List[Document]) -> str:
         """Fallback response when Groq is not available."""
         if not context:
             return self._handle_no_context(question)
         
-        # Combine context
         context_text = "\n\n".join([doc.page_content for doc in context[:2]])
         
-        # Clean up raw text
         lines = context_text.split('\n')
         cleaned_lines = []
         skip_patterns = ['www.AgriMoon.Com', 'AgriMoon', 'Diseases of Field Crops']
@@ -171,4 +106,4 @@ Would you like to ask about a specific crop or disease that I might have informa
         
         context_text = '\n'.join(cleaned_lines)[:1000]
         
-        return f"Based on agricultural documents:\n\n{context_text}\n\n---\n📌 This information is from agricultural documents. For more details, consult your agricultural extension officer."
+        return f"Based on agricultural documents:\n\n{context_text}"

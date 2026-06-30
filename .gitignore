@@ -1,0 +1,85 @@
+# ============================================
+# Python
+# ============================================
+agriculture/                    # Your virtual environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# ============================================
+# Environment Variables (IMPORTANT!)
+# ============================================
+.env
+.env.local
+.env.*.local
+groq_api_key.txt
+
+# ============================================
+# Data Files (Large files - keep out of repo)
+# ============================================
+data/chroma_db/
+data/agriculture_data/*.pdf
+data/agriculture_data/*.PDF
+data/raw/
+data/processed/
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# IDE / Editor Files
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Jupyter Notebooks
+# ============================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================
+# Logs and Temporary Files
+# ============================================
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# ============================================
+# OS Files
+# ============================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Project Specific
+# ============================================
+# PDF files (keep them local only)
+*.pdf
+!requirements.txt
+
+# Any other large files
+*.pkl
+*.h5
+*.pt
+*.pth
+*.onnxDisease Images/
+data/
+*.pdf

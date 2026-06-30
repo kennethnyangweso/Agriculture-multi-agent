@@ -191,8 +191,10 @@ class Config:
     # ============================================
     # Groq Prompt Template - Always in English
     # ============================================
+    # In src/config.py - Updated PROMPT_TEMPLATE
+
     PROMPT_TEMPLATE = """
-You are an agricultural advisor for Kenyan farmers. Use the information below to answer the question.
+You are an agricultural advisor for Kenyan farmers. Answer the question based on the information provided.
 
 CONTEXT:
 {context}
@@ -202,10 +204,9 @@ QUESTION: {question}
 INSTRUCTIONS:
 - Answer in clear, simple English
 - Be specific to Kenyan agriculture
-- If the context doesn't contain the answer, say so
+- If the context has related information, use reasoning to provide a helpful answer
 - Keep the answer concise (2-3 paragraphs max)
 - Use bullet points where appropriate
-- Do not mention the PDF sources or documents
 
 ANSWER:
 """
